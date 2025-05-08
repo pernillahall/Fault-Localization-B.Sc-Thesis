@@ -1,4 +1,3 @@
-# --- Imports ---
 import pandas as pd
 import numpy as np
 import random
@@ -8,8 +7,8 @@ import time
 import joblib
 from ..evaluation import eval_utils
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.ensemble import RandomForestClassifier # Changed from LogisticRegression
-from sklearn.multiclass import OneVsRestClassifier # Binary Relevance wrapper
+from sklearn.ensemble import RandomForestClassifier 
+from sklearn.multiclass import OneVsRestClassifier
 
 print(f"Script started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -34,16 +33,16 @@ RANKING_METRICS_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "rf_validation_ranking_me
 SEED = 42
 
 # TF-IDF Configuration
-MAX_FEATURES = 10000 # Limit vocabulary size -> TO TUNE
-NGRAM_RANGE = (1, 2) # Use unigrams and bigrams -> TO TUNE
+MAX_FEATURES = 1000 # Limit vocabulary size
+NGRAM_RANGE = (1, 1) # Use unigrams and bigrams
+MIN_DF = 2 # Minimum document frequency for TF-IDF
 
 # Random Forest Configuration
-RF_N_ESTIMATORS = 100 # Number of trees -> TO TUNE
-RF_MAX_DEPTH = None   # Grow trees fully -> TO TUNE
-RF_MIN_SAMPLES_SPLIT = 2 # Default
-RF_MIN_SAMPLES_LEAF = 1 # Default
+RF_N_ESTIMATORS = 20 # Number of trees
+RF_MAX_DEPTH = None   # Grow trees fully
+RF_MIN_SAMPLES_SPLIT = 2 
+RF_MIN_SAMPLES_LEAF = 10 
 RF_CLASS_WEIGHT = 'balanced_subsample' # Good for imbalance in BR setting
-# Other RF params like max_features could be tuned ('sqrt' is default)
 
 # Ranking Evaluation Configuration
 RANKING_K_VALUES = [1, 3, 5, 10]
@@ -92,7 +91,8 @@ except Exception as e:
 print("\nExtracting TF-IDF features...")
 tfidf_vectorizer = TfidfVectorizer(
     max_features=MAX_FEATURES,
-    ngram_range=NGRAM_RANGE
+    ngram_range=NGRAM_RANGE,
+    min_df=MIN_DF
 )
 try:
     print(f"Fitting TF-IDF on training data (max_features={MAX_FEATURES}, ngram_range={NGRAM_RANGE})...")
@@ -116,7 +116,7 @@ base_rf = RandomForestClassifier(
     min_samples_leaf=RF_MIN_SAMPLES_LEAF,
     class_weight=RF_CLASS_WEIGHT,
     random_state=SEED,
-    n_jobs=-1 # Use all cores for individual trees within the forest
+    n_jobs=-1
 )
 
 # Wrap with OneVsRestClassifier: trains one RF per label
@@ -131,7 +131,7 @@ except Exception as e:
     print(f"Error during model training: {e}")
     sys.exit(1)
 
-# Prediction on Validation Set ---
+# Prediction on Validation Set
 print("\nMaking predictions on the validation set using Random Forest...")
 try:
     y_pred_bin = classifier.predict(X_val_tfidf)

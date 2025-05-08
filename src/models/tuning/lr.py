@@ -32,14 +32,16 @@ RANKING_METRICS_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "lr_validation_ranking_me
 SEED = 42 # Random seed for reproducibility
 
 # TF-IDF Configuration
-MAX_FEATURES = 10000 # Limit vocabulary size -> TO TUNE
-NGRAM_RANGE = (1, 2) # Use unigrams and bigrams -> TO TUNE
+MAX_FEATURES = 1000 # Limit vocabulary size -> TO TUNE
+MIN_DF = 2 # Minimum document frequency for TF-IDF -> TO TUNE
+NGRAM_RANGE = (1, 1) # Use unigrams and bigrams -> TO TUNE
 
 # Logistic Regression Configuration
 LR_SOLVER = 'liblinear' # Good for sparse data, L1/L2 penalty
 LR_CLASS_WEIGHT = 'balanced' # Helps with imbalance within each binary classifier
 LR_MAX_ITER = 10000 # Increase if convergence warnings appear
-LR_C = 1.0 # Regularization strength (inverse); smaller values specify stronger regularization. -> TO TUNE
+LR_C = 0.1 # Regularization strength (inverse); smaller values specify stronger regularization. -> TO TUNE
+LR_PENALTY = 'l2' # Regularization penalty -> TO TUNE
 
 # Ranking Evaluation Configuration
 RANKING_K_VALUES = [1, 3, 5, 10]
@@ -88,7 +90,8 @@ except Exception as e:
 print("\nExtracting TF-IDF features...")
 tfidf_vectorizer = TfidfVectorizer(
     max_features=MAX_FEATURES,
-    ngram_range=NGRAM_RANGE
+    ngram_range=NGRAM_RANGE,
+    min_df=MIN_DF
 )
 try:
     print(f"Fitting TF-IDF on training data (max_features={MAX_FEATURES}, ngram_range={NGRAM_RANGE})...")
@@ -105,6 +108,7 @@ except Exception as e:
 print("\nTraining Logistic Regression model using OneVsRestClassifier...")
 print(f"Using solver='{LR_SOLVER}', class_weight='{LR_CLASS_WEIGHT}', C={LR_C}")
 base_lr = LogisticRegression(
+    penalty=LR_PENALTY,
     solver=LR_SOLVER,
     class_weight=LR_CLASS_WEIGHT,
     random_state=SEED,

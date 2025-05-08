@@ -12,7 +12,7 @@ from sklearn.multiclass import OneVsRestClassifier
 
 print(f"Script started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-# Configuration ---
+# Configuration
 print("Configuring environment for Linear SVM baseline...")
 PREPARED_DATA_DIR = "data/prepared_data"
 INPUT_TRAIN_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'train_df.csv')
@@ -32,16 +32,17 @@ RANKING_METRICS_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "svm_validation_ranking_m
 SEED = 42
 
 # TF-IDF Configuration
-MAX_FEATURES = 10000 # Limit vocabulary size -> TO TUNE
-NGRAM_RANGE = (1, 2) # Use unigrams and bigrams -> TO TUNE
+MAX_FEATURES = 1000 # Limit vocabulary size
+NGRAM_RANGE = (1, 1) # Use unigrams and bigrams
+MIN_DF = 2 # Minimum document frequency for TF-IDF
 
 # LinearSVC Configuration
-SVC_C = 1.0 # Regularization parameter (inverse); smaller values specify stronger regularization -> TO TUNE
-SVC_LOSS = 'squared_hinge' # Standard SVM loss, or 'hinge'
+SVC_C = 0.01 # Regularization parameter (inverse); smaller values specify stronger regularization
+SVC_LOSS = 'squared_hinge' # Standard SVM loss
 SVC_PENALTY = 'l2' # Standard regularization
-SVC_DUAL = 'auto' # Or True (default) or False. False often faster when n_features > n_samples if supported by loss/penalty. 'auto' is new default.
+SVC_DUAL = True 
 SVC_CLASS_WEIGHT = 'balanced' # Helps with imbalance within each binary classifier
-SVC_MAX_ITER = 2000 # Increase if convergence warnings appear
+SVC_MAX_ITER = 10000 # Increase if convergence warnings appear
 
 # Ranking Evaluation Configuration
 RANKING_K_VALUES = [1, 3, 5, 10]
@@ -87,7 +88,8 @@ except Exception as e:
 print("\nExtracting TF-IDF features...")
 tfidf_vectorizer = TfidfVectorizer(
     max_features=MAX_FEATURES,
-    ngram_range=NGRAM_RANGE
+    ngram_range=NGRAM_RANGE,
+    min_df=MIN_DF,
 )
 try:
     print(f"Fitting TF-IDF on training data (max_features={MAX_FEATURES}, ngram_range={NGRAM_RANGE})...")
