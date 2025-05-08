@@ -137,7 +137,9 @@ try:
     y_pred_bin = classifier.predict(X_val_tfidf)
     y_pred_proba = classifier.predict_proba(X_val_tfidf)
     print("Predictions generated.")
-except Exception as e: print(f"Error during prediction: {e}"); sys.exit(1)
+except Exception as e: 
+    print(f"Error during prediction: {e}")
+    sys.exit(1)
 
 
 # Evaluation on Validation set

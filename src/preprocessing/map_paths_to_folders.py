@@ -17,8 +17,12 @@ try:
     print(f"Loading bug reports from '{INPUT_BUGS_PATH}'...")
     bugs_df = pd.read_excel(INPUT_BUGS_PATH)
     print("Data loaded successfully.")
-except FileNotFoundError as e: print(f"Error loading files: {e}"); sys.exit(1)
-except Exception as e: print(f"Error during file loading: {e}"); sys.exit(1)
+except FileNotFoundError as e: 
+    print(f"Error loading files: {e}")
+    sys.exit(1)
+except Exception as e: 
+    print(f"Error during file loading: {e}")
+    sys.exit(1)
 
 
 # Preprocessing and Initial Label Extraction
@@ -28,7 +32,7 @@ def normalize_path(path):
     return path.strip().lower().replace("\\", "/")
 
 def extract_labels(row, path_map): 
-    paths_str = row.get('Paths', ''); 
+    paths_str = row.get('Paths', '')
     if pd.isna(paths_str): paths_str = ''
     paths = str(paths_str).split(',')
     normalized = [normalize_path(p) for p in paths if p]
@@ -49,7 +53,9 @@ print("Applying initial filters (1 to 5 labels per bug)...")
 initial_bug_count = len(bugs_df)
 bugs_df = bugs_df[bugs_df['Labels'].map(len).between(1, 5, inclusive='both')].reset_index(drop=True)
 print(f"Filtered bugs based on label count: {initial_bug_count} -> {len(bugs_df)} rows remaining.")
-if len(bugs_df) == 0: print("Error: No bugs remaining after initial filtering."); sys.exit(1)
+if len(bugs_df) == 0: 
+    print("Error: No bugs remaining after initial filtering.")
+    sys.exit(1)
 
 
 # Calculate Overall Label Frequencies

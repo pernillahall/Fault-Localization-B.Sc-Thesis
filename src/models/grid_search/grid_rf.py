@@ -87,13 +87,7 @@ except Exception as e:
     sys.exit(1)
 
 def top_k_accuracy(y_true, y_pred, k=3, needs_proba=False):
-    if needs_proba:
-        # If the scorer needs probability predictions, use the predictions as probabilities
-        ranked_indices = np.argsort(-y_pred, axis=1)  # Higher score is better
-    else:
-        # If the scorer doesn't need probabilities, just use class predictions
-        ranked_indices = np.argsort(-y_pred, axis=1)  # In case y_pred is already probabilities
-
+    ranked_indices = np.argsort(-y_pred, axis=1)
     num_samples = len(y_true)
     hits_at_k = 0
 

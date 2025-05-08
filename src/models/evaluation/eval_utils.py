@@ -155,7 +155,7 @@ def evaluate_model_predictions(
             ranking_metrics['MAP'] = map_score
             print(f"  MAP (Mean Average Precision): {map_score:.4f}")
 
-            # Save ranking metrics (including MAP)
+            # Save ranking metrics
             try:
                 with open(ranking_path, "w") as f:
                     f.write(f"Ranking Metrics ({model_name}):\n")

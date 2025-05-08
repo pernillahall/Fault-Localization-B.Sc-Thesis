@@ -5,13 +5,11 @@ import os
 import sys
 import time
 import joblib
-import argparse 
 import json
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
@@ -28,7 +26,6 @@ MLB_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'mlb.joblib')
 Y_TRAIN_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_train_bin.npy')
 Y_VAL_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_val_bin.npy')
 Y_TEST_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_test_bin.npy')
-
 
 OUTPUT_DIR = "results/lr_grid_search"
 CLASSIFIER_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'lr_binary_relevance_model.joblib')
@@ -89,13 +86,7 @@ except Exception as e:
     sys.exit(1)
 
 def top_k_accuracy(y_true, y_pred, k=3, needs_proba=False):
-    if needs_proba:
-        # If the scorer needs probability predictions, use the predictions as probabilities
-        ranked_indices = np.argsort(-y_pred, axis=1)  # Higher score is better
-    else:
-        # If the scorer doesn't need probabilities, just use class predictions
-        ranked_indices = np.argsort(-y_pred, axis=1)  # In case y_pred is already probabilities
-
+    ranked_indices = np.argsort(-y_pred, axis=1)
     num_samples = len(y_true)
     hits_at_k = 0
 
