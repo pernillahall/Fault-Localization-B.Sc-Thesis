@@ -6,7 +6,6 @@ import sys
 import time
 import joblib
 import json
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
@@ -15,7 +14,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
 from functools import partial
 
-from ..evaluation import eval_utils
+import eval_utils
 
 SEED = 42 # Random seed for reproducibility
 PREPARED_DATA_DIR = "data/prepared_data"
@@ -26,7 +25,6 @@ MLB_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'mlb.joblib')
 Y_TRAIN_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_train_bin.npy')
 Y_VAL_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_val_bin.npy')
 Y_TEST_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_test_bin.npy')
-
 
 OUTPUT_DIR = "results/rf_grid_search"
 CLASSIFIER_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'rf_binary_relevance_model.joblib')

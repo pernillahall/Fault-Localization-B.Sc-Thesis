@@ -20,8 +20,8 @@ from transformers import (
 )
 
 # Custom modules
-from .focal_loss_trainer import FocalLossTrainer
-from ..evaluation import eval_utils 
+from focal_loss_trainer import FocalLossTrainer
+import eval_utils 
 
 # Show warnings only
 hf_logging.set_verbosity_warning()

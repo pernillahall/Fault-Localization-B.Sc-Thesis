@@ -14,7 +14,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
 from functools import partial
 
-from ..evaluation import eval_utils
+import eval_utils
 
 SEED = 42 # Random seed for reproducibility
 PREPARED_DATA_DIR = "data/prepared_data"

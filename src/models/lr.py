@@ -5,7 +5,7 @@ import os
 import sys
 import time 
 import joblib 
-from ..evaluation import eval_utils
+import eval_utils
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
