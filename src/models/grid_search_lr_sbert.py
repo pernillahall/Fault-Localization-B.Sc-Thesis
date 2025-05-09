@@ -206,7 +206,7 @@ best_model = grid_search.best_estimator_
 print("\nMaking predictions on the validation set...")
 try:
     y_pred_bin = best_model.predict(X_val_features)
-    y_pred_proba = best_model.decision_function(X_val_features)
+    y_pred_proba = best_model.predict_proba(X_val_features)
     print("Predictions generated.")
 except Exception as e:
     print(f"Error during prediction: {e}")

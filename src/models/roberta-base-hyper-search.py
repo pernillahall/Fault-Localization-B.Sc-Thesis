@@ -7,6 +7,7 @@ import os
 import sys
 import joblib
 import time
+import optuna
 
 # Hugging face libraries
 from datasets import Dataset
@@ -29,8 +30,11 @@ hf_logging.set_verbosity_warning()
 # Configuration
 print("\nConfiguring environment for RoBERTa Fine-tuning...")
 PREPARED_DATA_DIR = "data/prepared_data"
-MODEL_PATH = "llms/distil-roberta-base-local-files"
-OUTPUT_DIR_BASE = "results/roberta_benchmarks"
+
+USE_DISTILLED_MODEL = False
+MODEL_PATH = "llms/distil-roberta-base-local-files" if USE_DISTILLED_MODEL else "llms/roberta-base-local-files"
+MODEL_NAME_TAG = "distil-roberta-base" if USE_DISTILLED_MODEL else "roberta-base"
+OUTPUT_DIR_BASE = os.path.join("results", f"HPO_{MODEL_NAME_TAG}")
 
 RUN_NAME = f"RoBERTa_NoAug_FL_ValEval_{time.strftime('%Y%m%d_%H%M%S')}"
 OUTPUT_DIR = os.path.join(OUTPUT_DIR_BASE, RUN_NAME)
@@ -38,16 +42,10 @@ LOGGING_DIR = os.path.join(OUTPUT_DIR, "logs")
 
 SEED = 42
 MAX_LENGTH = 256
-TRAIN_BATCH_SIZE = 8
 EVAL_BATCH_SIZE = 16
 GRADIENT_ACCUMULATION_STEPS = 2
-LEARNING_RATE = 3e-5
 EPOCHS = 20
-WEIGHT_DECAY = 0.01
 FP16_TRAINING = torch.cuda.is_available()
-
-FOCAL_LOSS_ALPHA = 0.25
-FOCAL_LOSS_GAMMA = 2.0
 
 RANKING_K_VALUES = [1, 3, 5, 10]
 TRAINER_LOG_K_VALUES = [1, 3, 5]
@@ -98,8 +96,7 @@ print(f"Created HF Datasets: Train={len(train_dataset)}, Val={len(val_dataset)},
 print(f"\nLoading Tokenizer and Model from {MODEL_PATH}...")
 try:
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=True)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH, num_labels=num_labels, problem_type="multi_label_classification")
-    print("Model and Tokenizer loaded.")
+    print("Model loaded.")
 except Exception as e: 
     print(f"Error loading model/tokenizer: {e}")
     sys.exit(1)
@@ -151,8 +148,79 @@ def compute_ranking_metrics(p: EvalPrediction):
         metrics['MRR'] = 0.0
     return metrics
 
+# Initialize new model for each optuna run
+def model_init():
+    return AutoModelForSequenceClassification.from_pretrained(
+        MODEL_PATH,
+        num_labels=num_labels,
+        problem_type='multi_label_classification'
+    )
 
-# Set Training Arguments
+# Optuna objective function to optimize
+def objective(trial):
+    print(f'Starting optuna trial {trial.number}...')
+
+    learning_rate = trial.suggest_loguniform("learning_rate", 1e-6, 5e-4)
+    weight_decay = trial.suggest_float("weight_decay", 0.0, 0.3)
+    alpha = trial.suggest_float("focal_loss_alpha", 0.1, 0.5)
+    gamma = trial.suggest_int("focal_loss_gamma", 1, 5)
+    batch_size = trial.suggest_categorical("train_batch_size", [8, 16, 32])
+
+    trial_output_dir = os.path.join(OUTPUT_DIR, f"optuna_trial_{trial.number}")
+    training_args = TrainingArguments(
+        output_dir=trial_output_dir,
+        num_train_epochs=EPOCHS,
+        learning_rate=learning_rate,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=EVAL_BATCH_SIZE,
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        weight_decay=weight_decay,
+        eval_strategy="epoch",
+        save_strategy="no",
+        logging_strategy="no",
+        metric_for_best_model="eval_top_3_accuracy", # Monitor 'MAP' for best model.
+        greater_is_better = True, # For MAP, MRR, and LRAP
+        load_best_model_at_end=False,
+        fp16=FP16_TRAINING,
+        seed=SEED,
+        report_to="none"
+    )
+
+    trainer = FocalLossTrainer(
+        model_init=model_init,
+        args=training_args,
+        train_dataset=tokenized_train_dataset,
+        eval_dataset=tokenized_val_dataset,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=compute_ranking_metrics,
+        focal_loss_alpha=alpha,
+        focal_loss_gamma=gamma
+    )
+
+    trainer.train()
+    metrics = trainer.evaluate()
+    return -metrics.get("eval_top_3_accuracy", 0.0)
+
+# Run Optuna
+print('Starting Optuna HP seach...')
+study = optuna.create_study(direction='minimize')
+study.optimize(objective, n_trials=10)
+
+print('Bets parameters found:')
+for k, v in study.best_trial.params.items():
+    print(f'{k}: {v}')
+
+# Use best hyperparameters
+LEARNING_RATE = study.best_trial.params["learning_rate"]
+WEIGHT_DECAY = study.best_trial.params["weight_decay"]
+FOCAL_LOSS_ALPHA = study.best_trial.params["focal_loss_alpha"]
+FOCAL_LOSS_GAMMA = study.best_trial.params["focal_loss_gamma"]
+TRAIN_BATCH_SIZE = study.best_trial.params["train_batch_size"]
+
+
+
+# Final training with best hyperparameters
 print("Setting training arguments...")
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
@@ -181,7 +249,7 @@ trainer_kwargs['focal_loss_alpha'] = FOCAL_LOSS_ALPHA
 trainer_kwargs['focal_loss_gamma'] = FOCAL_LOSS_GAMMA
 
 trainer = FocalLossTrainer(
-    model=model, 
+    model_init=model_init, 
     args=training_args,
     train_dataset=tokenized_train_dataset, 
     eval_dataset=tokenized_val_dataset,

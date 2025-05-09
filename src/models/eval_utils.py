@@ -70,7 +70,7 @@ def mean_reciprocal_rank(y_true_bin, ranked_indices):
 
     return np.mean(reciprocal_ranks) if reciprocal_ranks else 0.0
 
-def mean_average_precision(y_true_bin, ranked_indices):
+def mean_average_precision(y_true_bin, ranked_indices, needs_proba=False):
     """Calculates Mean Average Precision (MAP) for multi-label classification."""
     average_precisions = []
 

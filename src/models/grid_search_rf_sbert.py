@@ -10,7 +10,6 @@ import torch
 
 from sentence_transformers import SentenceTransformer
 from sklearn.preprocessing import StandardScaler
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
