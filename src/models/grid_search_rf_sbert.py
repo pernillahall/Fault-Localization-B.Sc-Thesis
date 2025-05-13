@@ -19,17 +19,19 @@ from functools import partial
 
 import eval_utils
 
+SUFFIX = ''
 SEED = 42 # Random seed for reproducibility
 PREPARED_DATA_DIR = "data/prepared_data"
-INPUT_TRAIN_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'train_df.csv')
-INPUT_VAL_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'val_df.csv')
-INPUT_TEST_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'test_df.csv')
-MLB_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'mlb.joblib')
-Y_TRAIN_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_train_bin.npy')
-Y_VAL_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_val_bin.npy')
-Y_TEST_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_test_bin.npy')
+INPUT_TRAIN_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'train_df{SUFFIX}.csv')
+INPUT_VAL_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'val_df.csv')
+INPUT_TEST_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'test_df.csv')
+MLB_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'mlb{SUFFIX}.joblib')
+Y_TRAIN_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'y_train_bin{SUFFIX}.npy')
+Y_VAL_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'y_val_bin{SUFFIX}.npy')
+Y_TEST_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'y_test_bin{SUFFIX}.npy')
 
-OUTPUT_DIR = "results/rf_sbert_grid_search"
+OUTPUT_DIR = f"results/rf_sbert_grid_search{SUFFIX}"
+SCALER_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'sbert_scaler_rf.joblib')
 CLASSIFIER_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'rf_binary_relevance_model.joblib')
 REPORT_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "rf_classification_report.txt")
 RANKING_METRICS_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "rf_validation_ranking_metrics.txt")
@@ -141,9 +143,41 @@ def top_k_accuracy(y_true, y_pred, k=3, needs_proba=False):
 
     return hits_at_k / num_samples if num_samples > 0 else 0.0
 
-k_to_optimize = 3 
+def mean_average_precision(y_true_bin, y_pred, needs_proba=False):
+    ranked_indices = np.argsort(-y_pred, axis=1)
+    average_precisions = []
+
+    for i in range(len(y_true_bin)):
+        true_positive_indices = np.where(y_true_bin[i] == 1)[0]
+        if len(true_positive_indices) == 0:
+            continue  # No relevant labels for this sample
+
+        ap = 0.0
+        num_relevant = len(true_positive_indices)
+        
+        # For each relevant label, calculate precision at the rank position where it appears
+        for rank, predicted_idx in enumerate(ranked_indices[i]):
+            if predicted_idx in true_positive_indices:
+                # Precision at this rank
+                ap += len(np.intersect1d(true_positive_indices, ranked_indices[i, :rank+1])) / (rank+1)
+
+        # Normalize by the number of relevant labels
+        ap /= num_relevant
+        average_precisions.append(ap)
+
+    # Return the Mean Average Precision (MAP)
+    return np.mean(average_precisions) if average_precisions else 0.0
+
+
+# k_to_optimize = 3 
+# custom_scorer = make_scorer(
+#     partial(top_k_accuracy, k=k_to_optimize), 
+#     greater_is_better=True, 
+#     needs_proba=True
+# )
+
 custom_scorer = make_scorer(
-    partial(top_k_accuracy, k=k_to_optimize), 
+    mean_average_precision, 
     greater_is_better=True, 
     needs_proba=True
 )
@@ -219,11 +253,30 @@ _ = eval_utils.evaluate_model_predictions(
     model_name="Random-Forest",
 )
 
-# Save Model & Vectorizer
+# Save Model and associated objects
 print(f"\nSaving trained objects...")
 try:
     joblib.dump(best_model, CLASSIFIER_OUTPUT_PATH)
+    joblib.dump(scaler, SCALER_OUTPUT_PATH)
     print(f"  Classifier saved to {CLASSIFIER_OUTPUT_PATH}")
+    print(f"  Scaler saved to {SCALER_OUTPUT_PATH}")
+
+    # Save config info (e.g., SBERT model name, seed, etc.)
+    config = {
+        "sbert_model_name": SBERT_MODEL_NAME,
+        "random_seed": SEED,
+        "cv_folds": CV_FOLDS,
+        "param_grid": param_grid,
+    }
+    with open(os.path.join(OUTPUT_DIR, 'config.json'), 'w') as f:
+        json.dump(config, f, indent=4)
+    print("  Config saved to config.json")
+
+    # Save best parameters
+    best_params_path = os.path.join(OUTPUT_DIR, 'best_params.json')
+    with open(best_params_path, 'w') as f:
+        json.dump(grid_search.best_params_, f, indent=4)
+    print(f"  Best hyperparameters saved to {best_params_path}")
 except Exception as e:
     print(f"Error saving objects: {e}")
 

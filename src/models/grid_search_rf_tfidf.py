@@ -16,17 +16,18 @@ from functools import partial
 
 import eval_utils
 
+SUFFIX = '_SR'
 SEED = 42 # Random seed for reproducibility
 PREPARED_DATA_DIR = "data/prepared_data"
-INPUT_TRAIN_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'train_df.csv')
-INPUT_VAL_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'val_df.csv')
-INPUT_TEST_DF_PATH = os.path.join(PREPARED_DATA_DIR, 'test_df.csv')
-MLB_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'mlb.joblib')
-Y_TRAIN_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_train_bin.npy')
-Y_VAL_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_val_bin.npy')
-Y_TEST_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, 'y_test_bin.npy')
+INPUT_TRAIN_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'train_df{SUFFIX}.csv')
+INPUT_VAL_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'val_df.csv')
+INPUT_TEST_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'test_df.csv')
+MLB_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'mlb{SUFFIX}.joblib')
+Y_TRAIN_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'y_train_bin{SUFFIX}.npy')
+Y_VAL_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'y_val_bin{SUFFIX}.npy')
+Y_TEST_LOAD_PATH = os.path.join(PREPARED_DATA_DIR, f'y_test_bin{SUFFIX}.npy')
 
-OUTPUT_DIR = "results/rf_grid_search"
+OUTPUT_DIR = f"results/rf_grid_search_tfidf{SUFFIX}"
 CLASSIFIER_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'rf_binary_relevance_model.joblib')
 TFIDF_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'tfidf_vectorizer_rf_baseline.joblib')
 REPORT_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "rf_classification_report.txt")
@@ -42,7 +43,7 @@ TF_MIN_DF_OPTIONS = [2] # Minimum document frequency for TF-IDF -> TO TUNE
 
 RF_N_ESTIMATORS_OPTIONS = [5, 10, 20, 100] # Number of trees -> TO TUNE
 RF_MAX_DEPTH_OPTIONS = [None, 20, 100] # Maximum depth of trees -> TO TUNE
-RF_MIN_SAMPLES_SPLIT_OPTIONS = [1, 2, 5, 10] # Minimum number of samples required to split an internal node -> TO TUNE
+RF_MIN_SAMPLES_SPLIT_OPTIONS = [2, 5, 10] # Minimum number of samples required to split an internal node -> TO TUNE
 RF_MIN_SAMPLES_LEAF_OPTIONS = [2, 5, 10, 20] # Minimum number of samples required to be at a leaf node -> TO TUNE
 RF_CLASS_WEIGHT_OPTIONS = ['balanced_subsample'] # Helps with imbalance within each binary classifier
 
@@ -104,9 +105,41 @@ def top_k_accuracy(y_true, y_pred, k=3, needs_proba=False):
 
     return hits_at_k / num_samples if num_samples > 0 else 0.0
 
-k_to_optimize = 3 
+def mean_average_precision(y_true_bin, y_pred, needs_proba=False):
+    ranked_indices = np.argsort(-y_pred, axis=1)
+    average_precisions = []
+
+    for i in range(len(y_true_bin)):
+        true_positive_indices = np.where(y_true_bin[i] == 1)[0]
+        if len(true_positive_indices) == 0:
+            continue  # No relevant labels for this sample
+
+        ap = 0.0
+        num_relevant = len(true_positive_indices)
+        
+        # For each relevant label, calculate precision at the rank position where it appears
+        for rank, predicted_idx in enumerate(ranked_indices[i]):
+            if predicted_idx in true_positive_indices:
+                # Precision at this rank
+                ap += len(np.intersect1d(true_positive_indices, ranked_indices[i, :rank+1])) / (rank+1)
+
+        # Normalize by the number of relevant labels
+        ap /= num_relevant
+        average_precisions.append(ap)
+
+    # Return the Mean Average Precision (MAP)
+    return np.mean(average_precisions) if average_precisions else 0.0
+
+
+# k_to_optimize = 3 
+# custom_scorer = make_scorer(
+#     partial(top_k_accuracy, k=k_to_optimize), 
+#     greater_is_better=True, 
+#     needs_proba=True
+# )
+
 custom_scorer = make_scorer(
-    partial(top_k_accuracy, k=k_to_optimize), 
+    mean_average_precision, 
     greater_is_better=True, 
     needs_proba=True
 )
@@ -186,15 +219,33 @@ _ = eval_utils.evaluate_model_predictions(
     model_name="Random-Forest",
 )
 
-# Save Model & Vectorizer
+# Save Model & Vectorizer & Params
 print(f"\nSaving trained objects...")
 try:
     joblib.dump(best_model, CLASSIFIER_OUTPUT_PATH)
-    joblib.dump(best_model, TFIDF_OUTPUT_PATH)
-    print(f"  Classifier saved to {CLASSIFIER_OUTPUT_PATH}")
+    print(f"  Classifier (pipeline) saved to {CLASSIFIER_OUTPUT_PATH}")
+    
+    tfidf_vectorizer = best_model.named_steps['tfidf']
+    joblib.dump(tfidf_vectorizer, TFIDF_OUTPUT_PATH)
     print(f"  TF-IDF Vectorizer saved to {TFIDF_OUTPUT_PATH}")
+    
+    best_params_path = os.path.join(OUTPUT_DIR, 'best_params.json')
+    with open(best_params_path, 'w') as f:
+        json.dump(grid_search.best_params_, f, indent=4)
+    print(f"  Best hyperparameters saved to {best_params_path}")
+    
+    config = {
+        "random_seed": SEED,
+        "cv_folds": CV_FOLDS,
+        "param_grid": param_grid
+    }
+    with open(os.path.join(OUTPUT_DIR, 'config.json'), 'w') as f:
+        json.dump(config, f, indent=4)
+    print("  Config saved to config.json")
+
 except Exception as e:
     print(f"Error saving objects: {e}")
+
 
 script_end_time = time.time()
 print(f"\n--- Full Random Forest Script Completed ---")
