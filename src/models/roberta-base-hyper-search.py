@@ -31,10 +31,10 @@ hf_logging.set_verbosity_warning()
 print("\nConfiguring environment for RoBERTa Fine-tuning...")
 PREPARED_DATA_DIR = "data/prepared_data"
 
-USE_DISTILLED_MODEL = False
+USE_DISTILLED_MODEL = True
 MODEL_PATH = "llms/distil-roberta-base-local-files" if USE_DISTILLED_MODEL else "llms/roberta-base-local-files"
 MODEL_NAME_TAG = "distil-roberta-base" if USE_DISTILLED_MODEL else "roberta-base"
-OUTPUT_DIR_BASE = os.path.join("results", f"HPO_{MODEL_NAME_TAG}")
+OUTPUT_DIR_BASE = os.path.join("results", f"HPO_{MODEL_NAME_TAG}_UPDATED")
 
 RUN_NAME = f"RoBERTa_NoAug_FL_ValEval_{time.strftime('%Y%m%d_%H%M%S')}"
 OUTPUT_DIR = os.path.join(OUTPUT_DIR_BASE, RUN_NAME)
@@ -178,7 +178,7 @@ def objective(trial):
         eval_strategy="epoch",
         save_strategy="no",
         logging_strategy="no",
-        metric_for_best_model="eval_top_3_accuracy", # Monitor 'MAP' for best model.
+        metric_for_best_model="eval_MAP", # Monitor 'MAP' for best model.
         greater_is_better = True, # For MAP, MRR, and LRAP
         load_best_model_at_end=False,
         fp16=FP16_TRAINING,
@@ -200,12 +200,12 @@ def objective(trial):
 
     trainer.train()
     metrics = trainer.evaluate()
-    return -metrics.get("eval_top_3_accuracy", 0.0)
+    return -metrics.get("eval_MAP", 0.0)
 
 # Run Optuna
 print('Starting Optuna HP seach...')
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=10)
+study.optimize(objective, n_trials=20)
 
 print('Bets parameters found:')
 for k, v in study.best_trial.params.items():
@@ -234,7 +234,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     logging_strategy="epoch",
     load_best_model_at_end=True,
-    metric_for_best_model="eval_top_3_accuracy", # Monitor 'MAP' for best model.
+    metric_for_best_model="eval_MAP", # Monitor 'MAP' for best model.
     greater_is_better = True, # For MAP, MRR, and LRAP
     fp16=FP16_TRAINING,
     seed=SEED,
@@ -338,6 +338,7 @@ try:
     with open(config_save_path, "w") as f:
          f.write(f"MODEL_TYPE=RoBERTa\nBASE_MODEL_PATH={MODEL_PATH}\n")
          f.write(f"PREPARED_DATA_DIR={PREPARED_DATA_DIR}\nSEED={SEED}\nEPOCHS={EPOCHS}\nLR={LEARNING_RATE}\n")
+         f.write(f"WEIGHT_DECAY={WEIGHT_DECAY}")
          f.write(f"BATCH_SIZE={TRAIN_BATCH_SIZE}\nGRAD_ACCUM={GRADIENT_ACCUMULATION_STEPS}\nMAX_LENGTH={MAX_LENGTH}\n")
          f.write(f"ALPHA={FOCAL_LOSS_ALPHA}\nGAMMA={FOCAL_LOSS_GAMMA}\n")
          f.write(f"EVAL_TARGET={EVAL_TARGET}\n")
