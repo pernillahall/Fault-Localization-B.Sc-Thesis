@@ -31,10 +31,11 @@ hf_logging.set_verbosity_warning()
 print("\nConfiguring environment for RoBERTa Fine-tuning...")
 PREPARED_DATA_DIR = "data/prepared_data"
 
-USE_DISTILLED_MODEL = True
+SUFFIX = ''
+USE_DISTILLED_MODEL = False
 MODEL_PATH = "llms/distil-roberta-base-local-files" if USE_DISTILLED_MODEL else "llms/roberta-base-local-files"
 MODEL_NAME_TAG = "distil-roberta-base" if USE_DISTILLED_MODEL else "roberta-base"
-OUTPUT_DIR_BASE = os.path.join("results", f"HPO_{MODEL_NAME_TAG}_UPDATED")
+OUTPUT_DIR_BASE = os.path.join("results", f"optuna/HPO_{MODEL_NAME_TAG}{SUFFIX}")
 
 RUN_NAME = f"RoBERTa_NoAug_FL_ValEval_{time.strftime('%Y%m%d_%H%M%S')}"
 OUTPUT_DIR = os.path.join(OUTPUT_DIR_BASE, RUN_NAME)
@@ -66,14 +67,14 @@ script_start_time = time.time()
 print("\nLoading pre-split data and prepared labels...")
 
 try:
-    train_df = pd.read_csv(os.path.join(PREPARED_DATA_DIR, 'train_df.csv'))
+    train_df = pd.read_csv(os.path.join(PREPARED_DATA_DIR, f'train_df{SUFFIX}.csv'))
     val_df = pd.read_csv(os.path.join(PREPARED_DATA_DIR, 'val_df.csv'))
     test_df = pd.read_csv(os.path.join(PREPARED_DATA_DIR, 'test_df.csv'))
-    mlb = joblib.load(os.path.join(PREPARED_DATA_DIR, 'mlb.joblib'))
+    mlb = joblib.load(os.path.join(PREPARED_DATA_DIR, f'mlb{SUFFIX}.joblib'))
     num_labels = len(mlb.classes_)
-    y_train_bin = np.load(os.path.join(PREPARED_DATA_DIR, 'y_train_bin.npy')).astype(np.float32)
-    y_val_bin = np.load(os.path.join(PREPARED_DATA_DIR, 'y_val_bin.npy')).astype(np.float32)
-    y_test_bin = np.load(os.path.join(PREPARED_DATA_DIR, 'y_test_bin.npy')).astype(np.float32)
+    y_train_bin = np.load(os.path.join(PREPARED_DATA_DIR, f'y_train_bin{SUFFIX}.npy')).astype(np.float32)
+    y_val_bin = np.load(os.path.join(PREPARED_DATA_DIR, f'y_val_bin{SUFFIX}.npy')).astype(np.float32)
+    y_test_bin = np.load(os.path.join(PREPARED_DATA_DIR, f'y_test_bin{SUFFIX}.npy')).astype(np.float32)
     print(f"Loaded data. Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)}. Labels={num_labels}")
     if not (len(train_df) == y_train_bin.shape[0] and y_train_bin.shape[1] == num_labels): 
         raise ValueError("Data shape mismatch.")
@@ -338,7 +339,7 @@ try:
     with open(config_save_path, "w") as f:
          f.write(f"MODEL_TYPE=RoBERTa\nBASE_MODEL_PATH={MODEL_PATH}\n")
          f.write(f"PREPARED_DATA_DIR={PREPARED_DATA_DIR}\nSEED={SEED}\nEPOCHS={EPOCHS}\nLR={LEARNING_RATE}\n")
-         f.write(f"WEIGHT_DECAY={WEIGHT_DECAY}")
+         f.write(f"WEIGHT_DECAY={WEIGHT_DECAY}\n")
          f.write(f"BATCH_SIZE={TRAIN_BATCH_SIZE}\nGRAD_ACCUM={GRADIENT_ACCUMULATION_STEPS}\nMAX_LENGTH={MAX_LENGTH}\n")
          f.write(f"ALPHA={FOCAL_LOSS_ALPHA}\nGAMMA={FOCAL_LOSS_GAMMA}\n")
          f.write(f"EVAL_TARGET={EVAL_TARGET}\n")
