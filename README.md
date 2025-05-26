@@ -23,7 +23,8 @@ and MRR.
 ## Dataset
 The data used in the study is derived from a software project at ABB Robotics, Västerås, Sweden, which due to confidential reasons is not published.
 This repository serves as a replication package, enabling this research to be replicated in any software setting where resolved bug reports and their corresponding
-code fixes are available.
+code fixes are available. This project is designed to run locally. After the initial step of extracting bug reports from Azure DevOps, all subsequent data processing, 
+model training, and evaluation occur on the local machine. The pre-trained language models are also loaded from local storage. This ensures the project's sensitive information do not need to be uploaded to external third-party services for AI processing.
 
 ---
 
@@ -49,10 +50,10 @@ code fixes are available.
 │       ├── y_train_bin.npy, ...
 │       ├── mlb.joblib, ...
 │
-├── llms/                                 # Locally stored pre-trained transformer models
-│   ├── all-mpnet-base-v2-local-files/    # For sentence embeddings
-│   ├── distil-roberta-base-local-files/  # Smaller RoBERTa model
-│   └── roberta-base-local-files/         # Full-size RoBERTa model
+├── llms/                                 # Locally stored pre-trained transformer models, pre-downloaded from the Hugging Face website
+│   ├── all-mpnet-base-v2-local-files/    # For sentence embeddings, download 'sentence-transformers/all-mpnet-base-v2'
+│   ├── distil-roberta-base-local-files/  # Smaller RoBERTa model, download 'distilroberta-base'
+│   └── roberta-base-local-files/         # Full-size RoBERTa model, download 'roberta-base'
 │
 ├── results/                              # Output directory for model checkpoints, logs, and evaluation results (excluded)
 │
@@ -90,7 +91,7 @@ The experiments were conducted on a machine with the following specifications:
 - **RAM:** 32.0 GB  
 - **GPU:** NVIDIA RTX A3000 (12.0 GB VRAM)  
 - **Operating System:** Windows 11  
-- **Python Version:** 3.10
+- **Python Version:** 3.10.9
 
 ---
 
@@ -137,6 +138,9 @@ project=YourProject
 ---
 
 ### Model Training & Benchmarking
+
+To run experiments with different data augmentation strategies, manually change the SUFFIX variable in the 
+respective training scripts to match the desired augmented dataset (e.g., _SR, _RS_underrep).
 
 #### Train and tune traditional ML models (LR, SVM, RF) with GridSearch:
 ```
