@@ -103,7 +103,7 @@ The experiments were conducted on a machine with the following specifications:
 Before running the code, install the required Python packages by running the following command in your terminal or command prompt:
 
 ```bash
-pip install numpy pandas scikit-learn matplotlib seaborn joblib sentence-transformers datasets optuna nltk azure-devops msrest python-dotenv beautifulsoup4
+pip install numpy pandas scikit-learn matplotlib seaborn joblib sentence-transformers datasets optuna nltk azure-devops msrest python-dotenv beautifulsoup4 scikit-multilearn
 ````
 
 For torch, check the appropriate CUDA version for your GPU and install accordingly from: https://pytorch.org/get-started/locally/
