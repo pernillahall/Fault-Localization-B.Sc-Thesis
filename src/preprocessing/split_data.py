@@ -9,7 +9,7 @@ from skmultilearn.model_selection import iterative_train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
 
 # Configuration
-INPUT_DATA_PATH = 'data/bug_dataset_preprocessed.csv' # <-- the csv file must contain columns: 'processed_text' and 'label_list'
+INPUT_DATA_PATH = 'bug_dataset_preprocessed.csv' # <-- the csv file must contain columns: 'processed_text' and 'label_list'
 OUTPUT_DIR = "data/prepared_data"
 OUTPUT_TRAIN_FILE = os.path.join(OUTPUT_DIR, 'train_df.csv')
 OUTPUT_VAL_FILE = os.path.join(OUTPUT_DIR, 'val_df.csv')

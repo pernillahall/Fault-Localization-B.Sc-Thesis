@@ -2,7 +2,7 @@ import numpy as np
 import os
 from sklearn.metrics import classification_report
 
-# Define Ranking Metric Functions (Including MAP)
+# Define ranking metric functions 
 def recall_at_k(y_true_bin, ranked_indices, k):
     """Calculates Recall at k for multi-label"""
     recalls = []
@@ -95,7 +95,7 @@ def mean_average_precision(y_true_bin, ranked_indices):
     # Return the Mean Average Precision (MAP)
     return np.mean(average_precisions) if average_precisions else 0.0
 
-# Main Evaluation Function (including MAP)
+# Main evaluation function
 def evaluate_model_predictions(
     y_true_bin, y_pred_bin, y_pred_scores, mlb, k_values, output_dir,
     model_name="Model", threshold_for_report=0.5
@@ -106,7 +106,7 @@ def evaluate_model_predictions(
     report_path = os.path.join(output_dir, f"{model_name}_classification_report.txt")
     ranking_path = os.path.join(output_dir, f"{model_name}_ranking_metrics.txt")
 
-    # Threshold-Based Metrics
+    # Threshold-based metrics
     print(f"\n--- Threshold-Based Metrics (@ threshold {threshold_for_report}) ---")
     eval_metrics_threshold = {}
     try:
@@ -125,7 +125,7 @@ def evaluate_model_predictions(
 
     except Exception as e: print(f"Error calculating threshold metrics: {e}")
 
-    # Ranking Metrics
+    # Ranking metrics
     print("\n--- Ranking-Based Metrics ---")
     ranking_metrics = {}
     if y_pred_scores is not None:

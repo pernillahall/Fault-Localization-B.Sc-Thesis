@@ -71,7 +71,7 @@ def normalize_path(path: str) -> str:
 
 def process_bug_relations(bug, bug_obj: Bug):
 
-    toIgnore = ['Resources', 'png', 'rspakspec','test', 'Test', 'yml', 'Build', '/Core', '/Build/', '.Build.', '/MessageLib', '/packages', 'csproj', 'sln', 'cmd', 'md', '/ModelLib', '/SCIDLib', 'Settings']
+    toIgnore = ['test', 'Test']
 
     """Process relations for a bug and fetch associated commits."""
     if bug.relations:

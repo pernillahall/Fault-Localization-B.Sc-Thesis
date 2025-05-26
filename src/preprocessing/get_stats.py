@@ -1,19 +1,25 @@
 import csv
-import matplotlib.pyplot as plt
+import ast
 from typing import Dict
-import seaborn as sns
 
 def parse_file(file_path: str) -> Dict[str, int]:
-    """Parse a file and count occurrences of each file path."""
+    """Parse a CSV file and count occurrences of each file path in the 'Paths' column."""
     file_occurrences = {}
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            for line in file:
-                # Split the line by commas and count occurrences
-                for item in line.strip().split(','):
-                    item = item.strip()  # Remove leading/trailing spaces
-                    file_occurrences[item] = file_occurrences.get(item, 0) + 1
+        with open(file_path, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                paths_str = row.get("Paths", "")
+                try:
+                    paths = ast.literal_eval(paths_str)
+                    if isinstance(paths, list):
+                        for path in paths:
+                            path = path.strip()
+                            if path:
+                                file_occurrences[path] = file_occurrences.get(path, 0) + 1
+                except (ValueError, SyntaxError) as e:
+                    print(f"Warning: Could not parse row: {paths_str}. Error: {e}")
     except FileNotFoundError:
         print(f"File not found: {file_path}")
         raise
@@ -39,7 +45,7 @@ def write_csv(data: Dict[str, int], output_file: str) -> None:
         raise
 
 def main():
-    input_file = "paths.txt"
+    input_file = "extracted_bugs.csv"
     output_file = "path_occurences.csv"
 
     print("Starting file parsing...")

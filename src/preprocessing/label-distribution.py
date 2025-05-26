@@ -3,7 +3,7 @@ import ast
 from collections import Counter
 
 # Load Excel file
-df = pd.read_csv("data/bug_dataset.csv")
+df = pd.read_csv("bug_dataset.csv")
 
 # Parse stringified lists into real Python lists
 df["Labels"] = df["Labels"].apply(ast.literal_eval)
