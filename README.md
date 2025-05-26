@@ -162,14 +162,3 @@ respective training scripts to match the desired augmented dataset (e.g., _SR, _
 ```
 
 ---
-
-## Citation
-
-```bibtex
-@bachelorsthesis{hall2025faultlocalization,
-  title={AI-Driven Fault Localization in Large-Scale Software Systems},
-  author={Hall, Pernilla},
-  year={2025},
-  school={Mälardalen University}
-}
-```
