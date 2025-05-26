@@ -82,11 +82,31 @@ code fixes are available.
 
 ---
 
+## Environment
+
+The experiments were conducted on a machine with the following specifications:
+
+- **CPU:** 12th Gen Intel(R) Core(TM) i9-12950HX  
+- **RAM:** 32.0 GB  
+- **GPU:** NVIDIA RTX A3000 (12.0 GB VRAM)  
+- **Operating System:** Windows 11  
+- **Python Version:** 3.10
+
+---
+
 ## Getting Started
 
 ⚠️ **Note:** Dataset and model artifacts are excluded due to confidentiality reasons.
 
 ### 1. Install dependencies
+
+Before running the code, install the required Python packages by running the following command in your terminal or command prompt:
+
+```bash
+pip install numpy pandas scikit-learn matplotlib seaborn joblib sentence-transformers datasets optuna nltk azure-devops msrest python-dotenv beautifulsoup4
+````
+
+For torch, check the appropriate CUDA version for your GPU and install accordingly from: https://pytorch.org/get-started/locally/
 
 ### 2. Azure DevOps Setup (for `extract_bugs.py`)
 
