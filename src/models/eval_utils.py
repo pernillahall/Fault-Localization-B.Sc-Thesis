@@ -7,12 +7,12 @@ def recall_at_k(y_true_bin, ranked_indices, k):
     """Calculates Recall at k for multi-label"""
     recalls = []
     for i in range(len(y_true_bin)):
-        true_positive_indices = np.where(y_true_bin[i] == 1)[0]
-        if len(true_positive_indices) == 0: 
+        true_pos_indices = np.where(y_true_bin[i] == 1)[0]
+        if len(true_pos_indices) == 0: 
             continue
         top_k_preds = ranked_indices[i, :k]
-        hits = np.intersect1d(true_positive_indices, top_k_preds)
-        recall = len(hits) / len(true_positive_indices)
+        hits = np.intersect1d(true_pos_indices, top_k_preds)
+        recall = len(hits) / len(true_pos_indices)
         recalls.append(recall)
     return np.mean(recalls) if recalls else 0.0
 
@@ -22,14 +22,14 @@ def precision_at_k(y_true_bin, ranked_indices, k):
     if k == 0: 
         return 0.0
     for i in range(len(y_true_bin)):
-        true_positive_indices = np.where(y_true_bin[i] == 1)[0]
+        true_pos_indices = np.where(y_true_bin[i] == 1)[0]
         top_k_preds = ranked_indices[i, :k]
-        hits = np.intersect1d(true_positive_indices, top_k_preds)
+        hits = np.intersect1d(true_pos_indices, top_k_preds)
         precision = len(hits) / k
         precisions.append(precision)
     return np.mean(precisions) if precisions else 0.0
 
-def top_k_accuracy_score(y_true_bin, ranked_indices, k):
+def top_k_accuracy_score(y_true_bin, ranked_indices, k, needs_proba=False):
     """Calculates Top-k Accuracy for multi-label"""
     hits_at_k = 0
     num_samples = len(y_true_bin)
@@ -53,24 +53,24 @@ def mean_reciprocal_rank(y_true_bin, ranked_indices):
     if num_samples == 0: return 0.0
 
     for i in range(num_samples):
-        true_positive_indices = np.where(y_true_bin[i] == 1)[0]
-        if len(true_positive_indices) > 0:
+        true_pos_indices = np.where(y_true_bin[i] == 1)[0]
+        if len(true_pos_indices) > 0:
             preds = ranked_indices[i]
             preds = preds[preds != -1]
-            first_correct_rank = 0
+            first_correct = 0
             for rank, predicted_idx in enumerate(preds):
-                if predicted_idx in true_positive_indices:
-                    first_correct_rank = rank + 1
+                if predicted_idx in true_pos_indices:
+                    first_correct = rank + 1
                     break
 
-            if first_correct_rank > 0:
-                 reciprocal_ranks.append(1.0 / first_correct_rank)
+            if first_correct > 0:
+                 reciprocal_ranks.append(1.0 / first_correct)
             else:
                  reciprocal_ranks.append(0.0)
 
     return np.mean(reciprocal_ranks) if reciprocal_ranks else 0.0
 
-def mean_average_precision(y_true_bin, ranked_indices, needs_proba=False):
+def mean_average_precision(y_true_bin, ranked_indices):
     """Calculates Mean Average Precision (MAP) for multi-label classification."""
     average_precisions = []
 
@@ -88,7 +88,7 @@ def mean_average_precision(y_true_bin, ranked_indices, needs_proba=False):
                 # Precision at this rank
                 ap += len(np.intersect1d(true_positive_indices, ranked_indices[i, :rank+1])) / (rank+1)
 
-        # Normalize by the number of relevant labels
+        # Normalize by number of relevant labels
         ap /= num_relevant
         average_precisions.append(ap)
 
@@ -167,6 +167,6 @@ def evaluate_model_predictions(
         except Exception as e: print(f"Error during ranking metric calculation: {e}")
     else: print("Skipping ranking metrics as scores were not provided.")
 
-    # Combine results
+    # Combine and return results
     all_metrics = {**eval_metrics_threshold, **ranking_metrics}
     return all_metrics

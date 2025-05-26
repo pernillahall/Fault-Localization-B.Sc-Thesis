@@ -1,4 +1,3 @@
-# Imports
 import pandas as pd
 import numpy as np
 import torch
@@ -9,7 +8,6 @@ import joblib
 import time
 import optuna
 
-# Hugging face libraries
 from datasets import Dataset
 from transformers import (
     AutoTokenizer,
@@ -20,7 +18,6 @@ from transformers import (
     logging as hf_logging
 )
 
-# Custom modules
 from focal_loss_trainer import FocalLossTrainer
 import eval_utils 
 
@@ -31,8 +28,8 @@ hf_logging.set_verbosity_warning()
 print("\nConfiguring environment for RoBERTa Fine-tuning...")
 PREPARED_DATA_DIR = "data/prepared_data"
 
-SUFFIX = ''
-USE_DISTILLED_MODEL = False
+SUFFIX = '' # SR, SR_underrep, RS or RS_underrep
+USE_DISTILLED_MODEL = False # Set to true to change model
 MODEL_PATH = "llms/distil-roberta-base-local-files" if USE_DISTILLED_MODEL else "llms/roberta-base-local-files"
 MODEL_NAME_TAG = "distil-roberta-base" if USE_DISTILLED_MODEL else "roberta-base"
 OUTPUT_DIR_BASE = os.path.join("results", f"optuna/HPO_{MODEL_NAME_TAG}{SUFFIX}")
@@ -54,6 +51,8 @@ EVAL_TARGET = 'validation' # Set to 'test' for test set evaluation
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(LOGGING_DIR, exist_ok=True)
+
+# Set random seed
 print(f"Setting random seed to {SEED}")
 random.seed(SEED)
 np.random.seed(SEED)
@@ -82,7 +81,6 @@ except Exception as e:
     print(f"Error loading pre-split data: {e}")
     sys.exit(1)
 
-# Data augmentation goes here
 train_texts_final = train_df['processed_text'].tolist()
 y_train_bin_final = y_train_bin
 
@@ -93,7 +91,7 @@ val_dataset = Dataset.from_dict({'text': val_df['processed_text'].tolist(), 'lab
 test_dataset = Dataset.from_dict({'text': test_df['processed_text'].tolist(), 'labels': y_test_bin})
 print(f"Created HF Datasets: Train={len(train_dataset)}, Val={len(val_dataset)}, Test={len(test_dataset)}")
 
-# Load RoBERTa tokenizer and model for multi-label classification
+# Load RoBERTa tokenizer and model
 print(f"\nLoading Tokenizer and Model from {MODEL_PATH}...")
 try:
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=True)
@@ -180,7 +178,7 @@ def objective(trial):
         save_strategy="no",
         logging_strategy="no",
         metric_for_best_model="eval_MAP", # Monitor 'MAP' for best model.
-        greater_is_better = True, # For MAP, MRR, and LRAP
+        greater_is_better = True, # For MAP
         load_best_model_at_end=False,
         fp16=FP16_TRAINING,
         seed=SEED,
@@ -201,7 +199,7 @@ def objective(trial):
 
     trainer.train()
     metrics = trainer.evaluate()
-    return -metrics.get("eval_MAP", 0.0)
+    return -metrics.get("eval_MAP", 0.0) # Return negative to minimize
 
 # Run Optuna
 print('Starting Optuna HP seach...')
@@ -219,9 +217,7 @@ FOCAL_LOSS_ALPHA = study.best_trial.params["focal_loss_alpha"]
 FOCAL_LOSS_GAMMA = study.best_trial.params["focal_loss_gamma"]
 TRAIN_BATCH_SIZE = study.best_trial.params["train_batch_size"]
 
-
-
-# Final training with best hyperparameters
+# Final training instance with best hyperparameters
 print("Setting training arguments...")
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
@@ -235,15 +231,15 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     logging_strategy="epoch",
     load_best_model_at_end=True,
-    metric_for_best_model="eval_MAP", # Monitor 'MAP' for best model.
-    greater_is_better = True, # For MAP, MRR, and LRAP
+    metric_for_best_model="eval_MAP", # Monitor 'MAP' for best model
+    greater_is_better = True, # For MAP
     fp16=FP16_TRAINING,
     seed=SEED,
     report_to="none",
     save_total_limit=1, # Keep only the best model
 )
 
-# Initialize Trainer
+# Initialize trainer
 print("Initializing Trainer...")
 trainer_kwargs = {}
 trainer_kwargs['focal_loss_alpha'] = FOCAL_LOSS_ALPHA

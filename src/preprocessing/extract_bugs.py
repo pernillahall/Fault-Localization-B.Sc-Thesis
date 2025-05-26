@@ -8,7 +8,7 @@ from typing import List, Tuple, Optional
 import pandas as pd
 
 # Constants
-CSV_FILE_PATH = 'extracted_bugs_w_dal.csv'
+CSV_FILE_PATH = 'extracted_bugs.csv'
 BUG_WORK_ITEM_TYPE = 'Bug'
 BUG_STATE_CLOSED = 'Closed'
 
@@ -63,7 +63,7 @@ def fetch_bugs():
 def normalize_path(path: str) -> str:
     """Normalize file paths."""
     path = path.replace("\\", "/")
-
+    
     if path.startswith("/Source"):
         return path[len('/Source'):]
     return path

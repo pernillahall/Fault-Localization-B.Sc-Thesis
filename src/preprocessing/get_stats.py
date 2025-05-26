@@ -4,14 +4,7 @@ from typing import Dict
 import seaborn as sns
 
 def parse_file(file_path: str) -> Dict[str, int]:
-    """Parse a file and count occurrences of each file path.
-
-    Args:
-        file_path (str): Path to the input file.
-
-    Returns:
-        Dict[str, int]: A dictionary with file paths as keys and their occurrences as values.
-    """
+    """Parse a file and count occurrences of each file path."""
     file_occurrences = {}
 
     try:
@@ -31,12 +24,7 @@ def parse_file(file_path: str) -> Dict[str, int]:
     return file_occurrences
 
 def write_csv(data: Dict[str, int], output_file: str) -> None:
-    """ Write file occurrences data to a CSV file.
-
-    Args:
-        data (Dict[str, int]): A dictionary with file paths as keys and their occurrences as values.
-        output_file (str): Path to the output CSV file.
-    """
+    """ Write file occurrences data to a CSV file."""
     try:
         with open(output_file, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
@@ -52,7 +40,7 @@ def write_csv(data: Dict[str, int], output_file: str) -> None:
 
 def main():
     input_file = "paths.txt"
-    output_file = "path_occurences_w_dal.csv"
+    output_file = "path_occurences.csv"
 
     print("Starting file parsing...")
     file_occurrences = parse_file(input_file)

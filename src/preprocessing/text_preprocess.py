@@ -32,8 +32,7 @@ def preprocess_text(text, stop_words, lemmatizer):
     # Case folding
     text = text.lower()
 
-    # Remove punctuation and numbers
-    # Keep only letters and spaces
+    # Remove punctuation
     text = re.sub(r'[^a-z\s]', '', text)
     # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text).strip()
@@ -47,9 +46,8 @@ def preprocess_text(text, stop_words, lemmatizer):
 
     return ' '.join(words)
 
-
 # Load and prepare dataset
-excel_file_path = 'bug_dataset_w_dal.xlsx'
+excel_file_path = 'bug_dataset.xlsx'
 
 try:
     df = pd.read_excel(excel_file_path)
@@ -104,6 +102,6 @@ print("\nSample of processed data:")
 print(df_final.head())
 
 # Save the processed data to a new file
-output_file_path = 'bug_dataset_w_dal_preprocessed.csv'
+output_file_path = 'bug_dataset_preprocessed.csv'
 df_final.to_csv(output_file_path, index=False)
 print(f"\nProcessed data saved to {output_file_path}")

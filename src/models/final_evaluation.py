@@ -19,8 +19,6 @@ from transformers import (
     DataCollatorWithPadding
 )
 
-print(f"Script started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-
 print("Configuring final benchmark run")
 
 PREPARED_DATA_DIR = "data/prepared_data"
@@ -322,6 +320,8 @@ SEED = 42
 RANKING_K_VALUES = [1, 3, 5, 10]
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Set random seeds
 np.random.seed(SEED)
 random.seed(SEED)
 torch.manual_seed(SEED)
@@ -441,6 +441,7 @@ for model_key, config in MODEL_CONFIGS.items():
             
             tokenized_hf_test_dataset = hf_test_dataset.map(tokenize_for_predict, batched=True, remove_columns=["text"])
 
+            # Create minimal training args
             temp_training_args = TrainingArguments(output_dir="./temp_training_predict_dir", per_device_eval_batch_size=16)
             trainer_for_predict = Trainer(
                 model=roberta_model,
@@ -452,9 +453,10 @@ for model_key, config in MODEL_CONFIGS.items():
             predictions_output = trainer_for_predict.predict(tokenized_hf_test_dataset)
             logits = predictions_output.predictions
 
+            # Scores for ranking metrics need to be probabilities, use sigmoid        
             sigmoid = torch.nn.Sigmoid()
             y_pred_scores_test_current_model = sigmoid(torch.Tensor(logits)).numpy()
-            threshold = 0.4
+            threshold = 0.5
             y_pred_bin_test_current_model = (y_pred_scores_test_current_model >= threshold).astype(int)
 
         else: # Sklearn models/pipelines

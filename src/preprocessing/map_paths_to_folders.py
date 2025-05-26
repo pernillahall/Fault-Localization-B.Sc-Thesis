@@ -5,12 +5,12 @@ import sys
 print("Starting data processing and label filtering...")
 
 # Configuration
-INPUT_FILE_INFO_PATH = "paths_to_folders_w_dal.xlsx"
-INPUT_BUGS_PATH = "extracted_bugs_w_dal.xlsx"
-OUTPUT_CSV_PATH = "bug_dataset_w_dal.csv"
+INPUT_FILE_INFO_PATH = "paths_to_folders.xlsx"
+INPUT_BUGS_PATH = "extracted_bugs.xlsx"
+OUTPUT_CSV_PATH = "bug_dataset.csv"
 MIN_LABEL_FREQUENCY = 10
 
-# Load Data
+# Load data
 try:
     print(f"Loading file info from '{INPUT_FILE_INFO_PATH}'...")
     file_info_df = pd.read_excel(INPUT_FILE_INFO_PATH)
@@ -25,7 +25,7 @@ except Exception as e:
     sys.exit(1)
 
 
-# Preprocessing and Initial Label Extraction
+# Preprocessing and initial label extraction
 print("Normalizing paths and extracting initial labels...")
 def normalize_path(path): 
     if not isinstance(path, str): return ""
@@ -48,7 +48,7 @@ bugs_df['Labels'] = bugs_df.apply(lambda row: extract_labels(row, file_to_subfol
 print("Initial label extraction complete.")
 
 
-# Initial Filtering based on Label Count per Bug
+# Initial filtering based on label count per bug
 print("Applying initial filters (1 to 5 labels per bug)...")
 initial_bug_count = len(bugs_df)
 bugs_df = bugs_df[bugs_df['Labels'].map(len).between(1, 5, inclusive='both')].reset_index(drop=True)
@@ -58,21 +58,14 @@ if len(bugs_df) == 0:
     sys.exit(1)
 
 
-# Calculate Overall Label Frequencies
+# Calculate overall label frequencies
 print("Calculating overall label frequencies...")
 all_labels_before_freq_filter = [label for sublist in bugs_df['Labels'] for label in sublist]
 label_counts = Counter(all_labels_before_freq_filter)
 original_unique_label_count = len(label_counts)
 print(f"Found {original_unique_label_count} unique labels before frequency filtering.")
 
-# (print top frequencies)
-# label_freq_df = pd.DataFrame(label_counts.items(), columns=['Label', 'Frequency'])
-# label_freq_df.sort_values(by='Frequency', ascending=False, inplace=True)
-# print("Top 20 Label Frequencies (before filtering):")
-# print(label_freq_df.head(20).to_string())
-
-
-# Define Valid Labels Based on Frequency
+# Define valid labels based on frequency
 print(f"\nDefining valid labels (frequency >= {MIN_LABEL_FREQUENCY})...")
 valid_labels = {label for label, count in label_counts.items() if count >= MIN_LABEL_FREQUENCY}
 final_unique_label_count = len(valid_labels)
@@ -102,7 +95,7 @@ if final_bug_count == 0:
     print(f"Error: No bugs remaining after filtering labels with frequency < {MIN_LABEL_FREQUENCY}.")
 
 
-# Final Frequency Check
+# Final frequency check
 print("\nRecalculating frequencies on final filtered data...")
 all_labels_after_freq_filter = [label for sublist in bugs_df['Labels'] for label in sublist]
 if all_labels_after_freq_filter:
@@ -115,7 +108,7 @@ if all_labels_after_freq_filter:
 else:
     print("No labels remaining in the data after filtering.")
 
-# Save Filtered Data
+# Save filtered data
 print(f"\nSaving final processed data to '{OUTPUT_CSV_PATH}'...")
 try:
     existing_cols = bugs_df.columns.tolist()

@@ -16,7 +16,9 @@ from functools import partial
 
 import eval_utils
 
-SUFFIX = ''
+# Configurations
+
+SUFFIX = '' # SR, SR_underrep, RS or RS_underrep
 SEED = 42 # Random seed for reproducibility
 PREPARED_DATA_DIR = "data/prepared_data"
 INPUT_TRAIN_DF_PATH = os.path.join(PREPARED_DATA_DIR, f'train_df{SUFFIX}.csv')
@@ -49,11 +51,12 @@ SVC_DUAL_OPTIONS = [True, False, 'auto'] # Or True (default) or False. False oft
 
 RANKING_K_VALUES = [1, 3, 5, 10] # K values for ranking evaluation
 
+# Set random seed
 print("Setting random seed to", SEED)
 np.random.seed(SEED)
 random.seed(SEED)
 
-# Load Preprocessed Data 
+# Load preprocessed data 
 script_start_time = time.time()
 print(f"\nLoading pre-split data and prepared labels")
 try:
@@ -85,26 +88,7 @@ except Exception as e:
     print(f"Error loading or processing data: {e}")
     sys.exit(1)
 
-def top_k_accuracy(y_true, y_pred, k=3, needs_threshold=False):
-    ranked_indices = np.argsort(-y_pred, axis=1)
-    num_samples = len(y_true)
-    hits_at_k = 0
-
-    if num_samples == 0:
-        return 0.0
-
-    for i in range(num_samples):
-        true_positive_indices = np.where(y_true[i] == 1)[0]
-        if len(true_positive_indices) > 0:
-            top_k_preds = ranked_indices[i, :k]
-            top_k_preds = top_k_preds[top_k_preds != -1]
-            if len(top_k_preds) > 0:
-                hits = np.intersect1d(true_positive_indices, top_k_preds)
-                if len(hits) > 0:
-                    hits_at_k += 1
-
-    return hits_at_k / num_samples if num_samples > 0 else 0.0
-
+# Function for custom scorer
 def mean_average_precision(y_true_bin, y_pred, needs_proba=False):
     ranked_indices = np.argsort(-y_pred, axis=1)
     average_precisions = []
@@ -130,21 +114,13 @@ def mean_average_precision(y_true_bin, y_pred, needs_proba=False):
     # Return the Mean Average Precision (MAP)
     return np.mean(average_precisions) if average_precisions else 0.0
 
-
-# k_to_optimize = 3 
-# custom_scorer = make_scorer(
-#     partial(top_k_accuracy, k=k_to_optimize), 
-#     greater_is_better=True, 
-#     needs_proba=True
-# )
-
 custom_scorer = make_scorer(
     mean_average_precision, 
     greater_is_better=True, 
     needs_proba=True
 )
 
-# define pipeline and parameter grid
+# Define pipeline and parameter grid
 print("Defining pipeline and parameter grid...")
 
 pipeline = Pipeline([
@@ -170,8 +146,8 @@ param_grid = {
 print("Parameter grid defined.")
 print(json.dumps(param_grid, indent=2))
 
-# perform grid search with cross validaton
-# fits on train data and use internal cross-validation to find best hyperparameters
+# Perform grid search with cross validaton
+# Fits on train data and use internal cross-validation to find best hyperparameters
 
 print("Performing grid search with cross-validation...")
 
@@ -191,14 +167,14 @@ except Exception as e:
     print(f"Error during grid search: {e}")
     sys.exit(1)
 
-# show best parameters and score
+# Show best parameters and score
 print("Best parameters found:")
 print(grid_search.best_params_)
 
-# save the best model
+# Save the best model
 best_model = grid_search.best_estimator_
 
-# Prediction on Validation Set
+# Prediction on validation set
 print("\nMaking predictions on the validation set...")
 try:
     y_pred_bin = best_model.predict(val_df['processed_text'])
@@ -208,7 +184,7 @@ except Exception as e:
     print(f"Error during prediction: {e}")
     sys.exit(1)
 
-# Evaluation on Validation set
+# Evaluation on validation set
 print("\n--- Evaluating Model on Validation Set ---")
 _ = eval_utils.evaluate_model_predictions(
     y_true_bin=y_val_bin,
@@ -220,7 +196,7 @@ _ = eval_utils.evaluate_model_predictions(
     model_name="SVM-Linear",
 )
 
-# Save Model & Vectorizer & Params
+# Save model & vectorizer & params
 print(f"\nSaving trained objects...")
 try:
     joblib.dump(best_model, CLASSIFIER_OUTPUT_PATH)

@@ -37,7 +37,7 @@ try:
     if not all(col in df.columns for col in required_columns):
         raise ValueError(f"Missing one or more required columns: {required_columns}")
     
-    # convert 'label_list' from string representation of list to actual list
+    # Convert 'label_list' from string representation of list to actual list
     if not df.empty and isinstance(df['label_list'].iloc[0], str):
         df['label_list'] = df['label_list'].apply(ast.literal_eval)
 
