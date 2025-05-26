@@ -75,7 +75,6 @@ model training, and evaluation occur on the local machine. The pre-trained langu
 │       ├── data_augmentation.py          # Augments samples with synonym/random swap techniques
 │       └── get_stats.py                  # Utility to compute path frequencies
 │
-├── requirements.txt                      # Python dependencies 
 ├── .env                                  # Azure DevOps credentials (excluded)
 ├── .gitignore                            # Ignored files/folders
 └── README.md                             # This file
@@ -123,17 +122,17 @@ project=YourProject
 
 ### 3. Data Preprocessing Pipeline
 
-#### Step 1: Extract bug reports from Azure DevOps using ```src/preprocessing/extract_bugs.py```
+- Step 1: Extract bug reports from Azure DevOps using ```src/preprocessing/extract_bugs.py```
 
-#### Step 2: Count file occurences using ```src/preprocessing/get_stats.py```. Manually annotate the resulting csv file with a 'Label' column.
+- Step 2: Count file occurences using ```src/preprocessing/get_stats.py```. Manually annotate the resulting csv file with a 'Label' column.
   
-#### Step 3: Map file paths to folder labels (targets) with ```src/preprocessing/map_paths_to_folders.py```
+- Step 3: Map file paths to folder labels (targets) with ```src/preprocessing/map_paths_to_folders.py```
 
-#### Step 4: Clean, decamelcase, remove stop words, lemmatize text using ```src/preprocessing/text_preprocess.py```
+- Step 4: Clean, decamelcase, remove stop words, lemmatize text using ```src/preprocessing/text_preprocess.py```
 
-#### Step 5: Stratified train/val/test split + label binarization through ```src/preprocessing/split_data.py```
+- Step 5: Stratified train/val/test split + label binarization through ```src/preprocessing/split_data.py```
 
-#### Step 6 (Optional): Augment underrepresented samples with ```src/preprocessing/data_augmentation.py```
+- Step 6 (Optional): Augment underrepresented samples with ```src/preprocessing/data_augmentation.py```
 
 ---
 
