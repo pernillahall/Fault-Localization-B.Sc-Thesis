@@ -4,8 +4,6 @@
 This repository contains the full implementation from the bachelor thesis:  
 **"AI-Driven Fault Localization in Large-Scale Software Systems"**  
 
-📄 **[Thesis Report PDF](./Thesis_Report.pdf)**
-
 ---
 
 ## Overview
